@@ -206,6 +206,35 @@ body {
     line-height: 1;
     transform-style: preserve-3d;
 }
+
+/* 🔥 Accept Button */
+.accept-btn {
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  height: 32px;
+}
+
+/* 🔥 Delete Button */
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  height: 32px;
+  cursor: pointer;
+}
+
+/* 🔥 Button container */
+.card-footer div:last-child {
+  display: flex;
+  gap: 6px;
+}
   
   /* loaction dropdown */
   .loc-dropdown {
@@ -237,6 +266,15 @@ body {
 
 .loc-item:hover {
   background: var(--green-pale);
+}
+
+.accepted-badge {
+  background: #22c55e;
+  color: white;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-left: 6px;
 }
 
   /* ── HERO ── */
@@ -877,11 +915,55 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
 
 <script>
 
+let selectedType = "task";
+
   const user = JSON.parse(localStorage.getItem("qq_user"));
 
 if (!user) {
   window.location.href = "login.html";
 }
+
+async function loadPosts() {
+  try {
+    const res = await fetch("http://localhost:5000/api/posts");
+    const data = await res.json();
+
+    if (!Array.isArray(data)) {
+      console.error("Backend error:", data);
+      posts = [];
+    } else {
+        posts = data.map(p => ({
+  ...p,
+  id: p._id,
+
+  title: p.title || "",
+  desc: p.desc || "",
+  loc: p.loc || "",
+
+  // 🔥 FIX 1 (IMPORTANT)
+  name: p.user || "User",
+
+  rating: 4.2,
+  trust: 80,
+
+  lat: p.lat || 19.0760,
+  lng: p.lng || 72.8777,
+  cat: p.cat || "task",
+
+  // 🔥 FIX 2 (MAIN BUG)
+  ts: new Date(p.createdAt).getTime()
+}));
+    }
+
+    renderFeed();
+    console.log("FINAL POSTS:", posts);
+  } catch (err) {
+    console.error("Error fetching posts:", err);
+    posts = [];
+    renderFeed();
+  }
+}
+
 
 function loadUser() {
   const user = JSON.parse(localStorage.getItem("qq_user"));
@@ -933,92 +1015,7 @@ loadUser();
   ];
   const NAMES = ['Anika S','Rohan M','Priya K','Karan D','Sneha R','Vivek T','Meera J','Arjun P','Zoya H','Dev N'];
 
-  let posts = [
-  {
-    id:1,
-    cat:'task',
-    title:'Need DBMS notes (Unit 3)',
-    desc:'Missed last 2 lectures, need clean notes before internals.',
-    loc:'Computer Dept',
-    lat:19.05, lng:72.83,
-    reward:100,
-    name:'Anika S',
-    rating:4.7,
-    trust:92,
-    joined:false,
-    ts:Date.now()-7200000
-  },
-  {
-    id:2,
-    cat:'task',
-    title:'Print assignment & submit',
-    desc:'Need someone to print my assignment and submit before 2 PM.',
-    loc:'Library Block',
-    lat:19.051, lng:72.831,
-    reward:50,
-    name:'Rohan M',
-    rating:4.5,
-    trust:88,
-    joined:false,
-    ts:Date.now()-5400000
-  },
-  {
-    id:3,
-    cat:'community',
-    title:'DSA Placement Prep Group',
-    desc:'Daily DSA practice + mock interviews. Serious people only.',
-    // loc:'Online + Campus',
-    // lat:19.052, lng:72.832,
-    reward:null,
-    name:'Priya K',
-    rating:4.8,
-    trust:94,
-    joined:false,
-    ts:Date.now()-3600000
-  },
-  {
-    id:4,
-    cat:'task',
-    title:'Explain OS scheduling (urgent)',
-    desc:'Need help understanding scheduling algorithms before viva.',
-    loc:'Hostel Block A',
-    lat:19.053, lng:72.833,
-    reward:150,
-    name:'Karan D',
-    rating:4.3,
-    trust:79,
-    joined:false,
-    ts:Date.now()-9000000
-  },
-  {
-    id:5,
-    cat:'community',
-    title:'Startup & Hackathon Circle',
-    desc:'Discuss ideas, build projects, participate in hackathons.',
-    // loc:'Seminar Hall',
-    // lat:19.054, lng:72.834,
-    reward:null,
-    name:'Sneha R',
-    rating:4.6,
-    trust:91,
-    joined:false,
-    ts:Date.now()-1800000
-  },
-  {
-    id:6,
-    cat:'task',
-    title:'Need lab partner (Java)',
-    desc:'Looking for someone to complete Java lab file together.',
-    loc:'IT Lab',
-    lat:19.055, lng:72.835,
-    reward:80,
-    name:'Vivek T',
-    rating:4.4,
-    trust:83,
-    joined:false,
-    ts:Date.now()-12600000
-  }
-];
+let posts = [];
   let nextId = 7;
   let activeTab = 'all';
 
@@ -1127,7 +1124,10 @@ function selectLocation(loc) {
   }
 }
 
-  function initials(n){ return n.split(' ').map(x=>x[0]).join(''); }
+function initials(n){
+  if(!n) return "U";
+  return n.split(' ').map(x=>x[0]).join('');
+}
   function stars(r){
     const full = Math.floor(r), half = r-full >= 0.5;
     let s = '★'.repeat(full);
@@ -1141,13 +1141,15 @@ function selectLocation(loc) {
     if(d<h*24) return Math.floor(d/h)+'h ago';
     return Math.floor(d/(h*24))+'d ago';
   }
-  function avatarStyle(id){ const a=AVATARS[id%AVATARS.length]; return `background:${a.bg};color:${a.txt}`; }
+function avatarStyle(id){
+  const safeId = Number(id) || Math.floor(Math.random() * AVATARS.length);
+  const a = AVATARS[safeId % AVATARS.length];
+  return `background:${a.bg};color:${a.txt}`;
+}
   function badgeCls(cat){ return `card-badge badge-${cat}`; }
   function badgeTxt(cat){ return cat==='task'?'Task':cat==='activity'?'Activity':'Community'; }
-  function actionLabel(p){
-  if(p.workedWith) return "Work Again 🔁";
-  if(p.joined) return p.cat==='task'?'Accepted ✓':'Joined ✓';
-  return p.cat==='task'?'Accept Task':'Join Community';
+  function actionLabel(p) {
+  return p.accepted ? "Accepted" : "Accept";
 }
   function actionCls(p){
     if(!p.joined) return 'card-action';
@@ -1227,10 +1229,13 @@ function selectLocation(loc) {
     function cardHtml(p, i, isFar){
       return `
       <div class="card ${isFar ? 'far-card' : 'nearby'}" id="card-${p.id}" style="animation-delay:${i*0.04}s">
-        <div class="card-top">
-          <span class="card-title">${escHtml(p.title)}</span>
-          <span class="${badgeCls(p.cat)}">${badgeTxt(p.cat)}</span>
-        </div>
+       <div class="card-top">
+  <span class="card-title">${escHtml(p.title)}</span>
+
+  ${p.accepted ? `<span class="accepted-badge">✔ Accepted</span>` : ''}
+
+  <span class="${badgeCls(p.cat)}">${badgeTxt(p.cat)}</span>
+</div>
         <div class="card-desc">${escHtml(p.desc)}</div>
         <div class="card-meta">
             ${p.cat === 'task' && p.loc ? `
@@ -1247,15 +1252,16 @@ function selectLocation(loc) {
             ${timeAgo(p.ts)}
           </span>
           ${p.cat === 'task' ? distChipHtml(p) : ''}
-          ${p.reward ? `<span class="reward-chip">₹${p.reward}</span>` : ''}
+          ${p.cat === 'task' && p.reward ? `<span class="reward-chip">₹${p.reward}</span>` : ''}
         </div>
+        ${p.accepted ? `<span class="meta-chip">Accepted by ${p.acceptedBy}</span>` : ''}
         <div class="card-divider"></div>
         <div class="card-footer">
           <div class="card-user">
             ${isAvailable ? `<span class="trust-badge">🟢</span>` : ''}
             <div class="user-avatar" style="${avatarStyle(p.id)}">${initials(p.name)}</div>
             <div class="user-info">
-              <div class="user-name">${escHtml(p.name)}</div>
+              ${p.cat === 'task' ? `<div class="user-name">${escHtml(p.name)}</div>` : ''}
               <div class="user-trust">
                 <span class="stars">${stars(p.rating)}</span>
                 <span class="trust-score">${p.rating}</span>
@@ -1263,7 +1269,23 @@ function selectLocation(loc) {
               </div>
             </div>
           </div>
-          <button class="${actionCls(p)}" onclick="handleAction(${p.id})">${actionLabel(p)}</button>
+          ${p.cat === 'task' ? `
+  <button 
+    class="${actionCls(p)}" 
+    onclick="handleAction('${p.id}')" 
+    ${p.accepted ? 'disabled' : ''}
+  >
+    ${actionLabel(p)}
+  </button>
+
+  <button class="delete-btn" onclick="deletePost('${p.id}')">
+    Delete
+  </button>
+` : `
+  <button class="accept-btn" onclick="joinCommunity('${p.id}')">
+    Join
+  </button>
+`}
         </div>
       </div>`;
     }
@@ -1304,20 +1326,28 @@ function selectLocation(loc) {
     renderFeed();
   }
 
-  function handleAction(id){
-    const p = posts.find(x=>x.id===id);
-    if(!p) return;
-    p.joined = !p.joined;
-    if(p.joined){
-  p.workedWith = true;
-}
-    const msgs = {
-      task:      p.joined ? '✅ Task accepted! The poster will contact you shortly.' : 'You cancelled the task.',
-      community: p.joined ? '💬 Welcome to the community!' : 'You left the community.',
-    };
-    showToast(msgs[p.cat]);
-    renderFeed();
+  async function handleAction(id) {
+  const user = JSON.parse(localStorage.getItem("qq_user"));
+
+  try {
+    await fetch(`http://localhost:5000/api/posts/${id}/accept`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        user: user?.name || "User"
+      })
+    });
+
+    showToast("✅ Task accepted!");
+    loadPosts();
+
+  } catch (err) {
+    console.error(err);
+    showToast("❌ Failed to accept");
   }
+}
 
   /* ──── MODAL ──── */
   function openModal(){
@@ -1332,105 +1362,87 @@ function selectLocation(loc) {
     document.getElementById('rewardField').style.visibility = cat==='task' ? 'visible' : 'hidden';
   }
 
-  async function submitPost() {
-  const cat = document.querySelector('input[name="cat"]:checked').value;
-  const title = document.getElementById('f-title').value.trim();
-  const desc  = document.getElementById('f-desc').value.trim();
-  const loc   = document.getElementById('f-loc').value.trim();
-  const rewardVal = document.getElementById('f-reward').value;
-  const reward = (cat==='task' && rewardVal) ? parseInt(rewardVal) : null;
+async function submitPost() {
+  const title = document.getElementById("f-title").value;
+  const desc = document.getElementById("f-desc").value;
+  const loc = document.getElementById("f-loc").value;
+  const reward = document.getElementById("f-reward").value;
 
-  if(!title || !desc || !loc){
-    showToast("⚠️ Fill all fields");
-    return;
-  }
+  const user = JSON.parse(localStorage.getItem("qq_user"));
+const selectedCat = document.querySelector('input[name="cat"]:checked').value;
+  // 🔥 GET COORDINATES (IMPORTANT)
+  const coords = await getCoordinates(loc);
 
-  showToast("📍 Detecting location...");
-
-  let lat = userLat || 19.0760;
-  let lng = userLng || 72.8777;
-
-  try {
-    const coords = await getCoordinates(loc);
-
-    if (coords) {
-      lat = coords.lat;
-      lng = coords.lng;
-    }
-  } catch (err) {
-    console.log("Location fetch failed, using fallback");
-  }
-
-  const name = NAMES[Math.floor(Math.random()*NAMES.length)];
-
-  posts.unshift({
-    id: nextId++,
-    cat,
+  const newPost = {
     title,
     desc,
+    cat: selectedCat,
     loc,
     reward,
-    lat,
-    lng,
-    name,
-    rating: parseFloat((3.8+Math.random()*1.2).toFixed(1)),
-    trust: 70+Math.floor(Math.random()*28),
-    joined: false,
-    workedWith: false,
+
+    // 🔥 REQUIRED FIELDS
+    name: user?.name || "User",
+    rating: 4.2,
+    trust: 85,
+
+    lat: coords ? coords.lat : 19.0760,
+    lng: coords ? coords.lng : 72.8777,
+
     ts: Date.now()
-  });
+  };
 
-  ['f-title','f-desc','f-loc','f-reward'].forEach(id=>{ document.getElementById(id).value=''; });
+  try {
+    const res = await fetch("http://localhost:5000/api/posts", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(newPost)
+});
 
-  closeModal();
-  renderFeed();
+const data = await res.json();
 
-  showToast("🎉 Post published!");
+if (!res.ok) {
+  console.error("Backend error:", data);
+  throw new Error("Post failed");
+}
+    console.log("Saved:", data);
+
+    showToast("✅ Post created!");
+
+    closeModal();      // close popup
+    activeTab = 'all';
+document.querySelectorAll('.tab-btn').forEach((t,i)=>t.classList.toggle('active',i===0));
+
+loadPosts();       // refresh feed
+
+  } catch (err) {
+    console.error("Error:", err);
+    showToast("❌ Failed to post");
+  }
 }
 
-//   async function submitPost(){
-//     const cat = document.querySelector('input[name="cat"]:checked').value;
-//     const title = document.getElementById('f-title').value.trim();
-//     const desc  = document.getElementById('f-desc').value.trim();
-//     const loc   = document.getElementById('f-loc').value.trim();
-//     const rewardVal = document.getElementById('f-reward').value;
-//     const reward = (cat==='task' && rewardVal) ? parseInt(rewardVal) : null;
+function joinCommunity(id){
+  showToast("🎉 Joined community!");
+}
 
-//     if(!title){ showToast('⚠️ Please enter a title.'); document.getElementById('f-title').focus(); return; }
-//     if(!desc){  showToast('⚠️ Please add a description.'); document.getElementById('f-desc').focus(); return; }
-//     if(!loc){   showToast('⚠️ Please enter a location.'); document.getElementById('f-loc').focus(); return; }
+/* delete post (bonus) */
+async function deletePost(id) {
+  if (!confirm("Delete this post?")) return;
 
-//     const name = NAMES[Math.floor(Math.random()*NAMES.length)];
-//     // 🔥 Get coordinates from location text
-// const coords = await getCoordinates(loc);
+  try {
+    await fetch(`http://localhost:5000/api/posts/${id}`, {
+      method: "DELETE"
+    });
 
-// posts.unshift({
-//   id: nextId++,
-//   cat,
-//   title,
-//   desc,
-//   loc,
-//   reward,
+    showToast("🗑️ Post deleted");
+    loadPosts(); // refresh
 
-//   lat: coords ? coords.lat : (userLat || 19.0760),
-//   lng: coords ? coords.lng : (userLng || 72.8777),
-
-//   name,
-//   rating: parseFloat((3.8+Math.random()*1.2).toFixed(1)),
-//   trust: 70+Math.floor(Math.random()*28),
-//   joined: false,
-//   ts: Date.now()
-// });
-
-  //   ['f-title','f-desc','f-loc','f-reward'].forEach(id=>{ document.getElementById(id).value=''; });
-  //   closeModal();
-
-  //   activeTab = 'all';
-  //   document.querySelectorAll('.tab-btn').forEach((t,i)=>t.classList.toggle('active',i===0));
-  //   document.getElementById('sortSelect').value = 'newest';
-  //   renderFeed();
-  //   showToast('🎉 Post published! It\'s now live in the feed.');
-  // }
+  } catch (err) {
+    console.error(err);
+    showToast("❌ Failed to delete");
+  }
+}
 
   /* ──── TOAST ──── */
   function showToast(msg){
@@ -1647,7 +1659,7 @@ window.onload = () => {
   /* ──── INIT ──── */
   toggleRewardField();
   renderFeed();
+  loadPosts();
 </script>
 </body>
 </html>
-'
