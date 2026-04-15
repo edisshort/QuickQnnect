@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuickQnnect Login</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.login-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.login-card h1 {
+  margin-bottom: 0.5rem;
+}
+
+.login-card p {
+  margin-bottom: 1.5rem;
+  color: #6b7280;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="login-card">
+  <h1>QuickQnnect 🎓</h1>
+  <p>Connect with students on your campus</p>
+
+  <input id="name" type="text" placeholder="Enter your name">
+
+  <select id="college">
+    <option value="">Select your college</option>
+    <option>SFIT</option>
+    <option>DJ Sanghvi</option>
+    <option>NMIMS</option>
+    <option>VJTI</option>
+    <option>KJ Somaiya</option>
+  </select>
+
+  <button onclick="login()">Continue</button>
+</div>
+
+<script>
+function login() {
+  const name = document.getElementById("name").value.trim();
+  const college = document.getElementById("college").value;
+
+  if (!name || !college) {
+    alert("Please fill all details");
+    return;
+  }
+
+  const user = { name, college };
+  localStorage.setItem("qq_user", JSON.stringify(user));
+
+  // redirect to main app
+  window.location.href = "quickqnnect.html";
+}
+</script>
+
+</body>
+</html>
