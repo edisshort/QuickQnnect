@@ -908,6 +908,10 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
   <input class="field-input" id="f-loc" placeholder="e.g. Bandra West" oninput="showSuggestions()">
   <div id="locSuggestions" class="loc-dropdown"></div>
 </div>
+<div class="field">
+  <label class="field-label" for="f-phone">Phone Number</label>
+  <input class="field-input" id="f-phone" placeholder="Enter your phone (for contact)">
+</div>
         </div>
         <div class="field" id="rewardField">
           <label class="field-label" for="f-reward">Reward (₹)</label>
@@ -947,6 +951,7 @@ async function loadPosts() {
         posts = data.map(p => ({
   ...p,
   id: p._id,
+  phone: p.phone || "",
 
   title: p.title || "",
   desc: p.desc || "",
@@ -1199,6 +1204,18 @@ function avatarStyle(id){
     return p.cat==='task'?'card-action done-task':'card-action done-join';
   }
 
+function acceptTask(id){
+  const post = posts.find(p => p.id === id);
+
+  if (!post || post.accepted) return;
+
+  post.accepted = true;
+
+  showToast("✅ Task accepted! You can now contact the user.");
+
+  renderFeed();
+}
+
   /* ──── DISTANCE (Haversine — no API needed) ──── */
   function getDistanceKm(lat1, lng1, lat2, lng2){
     const R = 6371, toRad = x => x * Math.PI / 180;
@@ -1315,25 +1332,26 @@ function avatarStyle(id){
             </div>
           </div>
           ${p.cat === 'task' ? `
-  <button 
-    class="${actionCls(p)}" 
-    onclick="handleAction('${p.id}')" 
-    ${p.accepted ? 'disabled' : ''}
-  >
-    ${actionLabel(p)}
+  ${p.accepted ? `
+  <button class="card-action" onclick="contactUser('${p.phone}')">
+    📞 Contact
   </button>
+` : `
+  <button 
+    class="accept-btn" 
+    onclick="handleAction('${p.id}')"
+  >
+    Accept
+  </button>
+`}
 
   <button class="delete-btn" onclick="deletePost('${p.id}')">
     Delete
   </button>
 ` : `
-  <button 
-  class="${p.joined ? 'card-action done-join' : 'accept-btn'}"
-  onclick="joinCommunity('${p.id}')"
-  ${p.joined ? 'disabled' : ''}
->
-  ${p.joined ? 'Joined' : 'Join'}
-</button>
+  <button class="accept-btn" onclick="joinCommunity('${p.id}')">
+    Join
+  </button>
 `}
         </div>
       </div>`;
@@ -1398,6 +1416,24 @@ function avatarStyle(id){
   }
 }
 
+/* Contact user (opens phone dialer) */
+function contactUser(phone) {
+   console.log("PHONE:", phone);
+  if (!phone) {
+    showToast("No phone available");
+    return;
+  }
+   // remove spaces
+  phone = phone.replace(/\s+/g, "");
+
+  // add India code if missing
+  if (!phone.startsWith("91")) {
+    phone = "91" + phone;
+  }
+
+  window.open(`https://wa.me/${phone}`, "_blank");
+}
+
   /* ──── MODAL ──── */
   function openModal(){
     document.getElementById('modalBackdrop').classList.add('open');
@@ -1412,6 +1448,7 @@ function avatarStyle(id){
   }
 
 async function submitPost() {
+  const phone = document.getElementById("f-phone").value.trim();
   const currentUser = JSON.parse(localStorage.getItem("qq_user"));
   const title = document.getElementById("f-title").value;
   const desc = document.getElementById("f-desc").value;
@@ -1429,17 +1466,19 @@ const selectedCat = document.querySelector('input[name="cat"]:checked').value;
     cat: selectedCat,
     loc,
     reward,
-
-    // 🔥 REQUIRED FIELDS
+    phone,
     user: user?.name || "User",
     rating: 4.2,
     trust: 85,
-
     lat: coords?.lat || 19.0760,
 lng: coords?.lng || 72.8777,
-
     ts: Date.now()
   };
+
+if (!phone) {
+  showToast("Enter phone number");
+  return;
+}
 
   try {
     const res = await fetch("http://localhost:5000/api/posts", {
@@ -1473,14 +1512,7 @@ loadPosts();       // refresh feed
 }
 
 function joinCommunity(id){
-  const post = posts.find(p => p.id === id);
-
-  if (!post || post.joined) return;
-
-  post.joined = true;
-
   showToast("🎉 Joined community!");
-  renderFeed();
 }
 
 /* delete post (bonus) */

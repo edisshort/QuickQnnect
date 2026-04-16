@@ -16,6 +16,7 @@ router.get("/posts", async (req, res) => {
 // ✅ CREATE new post
 router.post("/posts", async (req, res) => {
   try {
+    console.log("BODY:", req.body);
     const newPost = new Post(req.body);
     const savedPost = await newPost.save();
     res.json(savedPost);

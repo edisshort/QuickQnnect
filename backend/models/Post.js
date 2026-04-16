@@ -10,6 +10,7 @@ const postSchema = new mongoose.Schema({
   reward: Number,
   user: String,
   college: String,
+  phone: String,
   // 🔥 ADD THIS
   accepted: {
     type: Boolean,
