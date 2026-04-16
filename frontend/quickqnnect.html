@@ -967,10 +967,16 @@ async function loadPosts() {
 
 function loadUser() {
   const user = JSON.parse(localStorage.getItem("qq_user"));
-  if (!user) return;
 
-  document.getElementById("user-info").innerText =
-    `👤 ${user.name} • ${user.college}`;
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  document.getElementById("user-info").innerHTML = `
+    👤 <strong>${user.name}</strong><br>
+    
+  `;
 }
 
 function logout() {

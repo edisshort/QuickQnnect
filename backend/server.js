@@ -4,12 +4,17 @@ const cors = require("cors");
 
 const postRoutes = require("./routes/postRoutes");
 
+const authRoutes = require("./routes/auth");
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
+// Routes
+app.use(express.json());
+app.use("/api/auth", authRoutes);
 
 // Test route
 app.get("/", (req, res) => {
