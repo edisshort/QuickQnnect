@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+require("dotenv").config();
 
 const postRoutes = require("./routes/postRoutes");
 
@@ -23,7 +24,7 @@ app.get("/", (req, res) => {
   res.send("API is running 🚀");
 });
 
-mongoose.connect("mongodb+srv://harshsolanki2203_db_user:f02qjI3mKsec3JmZ@cluster0.fepetlt.mongodb.net/quickqnect?retryWrites=true&w=majority")
+mongoose.connect(process.env.MONGO_URI)
 .then(() => {
   console.log("MongoDB connected ✅");
 
