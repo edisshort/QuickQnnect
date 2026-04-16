@@ -1397,7 +1397,7 @@ function acceptTask(id){
   const user = JSON.parse(localStorage.getItem("qq_user"));
 
   try {
-    await fetch(`http://localhost:5000/api/posts/${id}/accept`, {
+    await fetch(`https://quickqnnect-backend.onrender.com/api/posts/${id}/accept`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -1481,7 +1481,7 @@ if (!phone) {
 }
 
   try {
-    const res = await fetch("http://localhost:5000/api/posts", {
+    const res = await fetch("https://quickqnnect-backend.onrender.com/api/posts", {
   method: "POST",
   headers: {
     "Content-Type": "application/json"
@@ -1520,7 +1520,7 @@ async function deletePost(id) {
   if (!confirm("Delete this post?")) return;
 
   try {
-    await fetch(`http://localhost:5000/api/posts/${id}`, {
+    await fetch(`https://quickqnnect-backend.onrender.com/api/posts/${id}`, {
       method: "DELETE"
     });
 
