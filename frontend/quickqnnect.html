@@ -383,6 +383,23 @@ body {
   }
   .sort-select:focus { border-color: var(--green); }
 
+/* stage */
+  .stage {
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* filter */
+.filter-bar {
+  position: relative;
+  z-index: 200;
+}
+
+.sort-select {
+  position: relative;
+  z-index: 300;
+}
+
   /* ── LOCATION BANNER ── */
   .location-banner {
     max-width: 1100px; margin: 0 auto;
@@ -742,14 +759,9 @@ body {
   <div class="nav-spacer"></div>
   <div id="user-info"></div>
   <button onclick="logout()">Logout</button>
-  <div class="nav-location" onclick="alert('Location picker — coming soon!')">
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <path d="M6.5 1C4.3 1 2.5 2.8 2.5 5c0 3 4 8 4 8s4-5 4-8c0-2.2-1.8-4-4-4z" stroke="currentColor" stroke-width="1.2"/>
-      <circle cx="6.5" cy="5" r="1.4" fill="currentColor"/>
-    </svg>
-    Bandra West, Mumbai
-    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </div>
+  <div class="nav-location" id="navLocation">
+  Detecting location...
+</div>
   <button class="nav-btn-create" onclick="openModal()">
     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
     New Post
@@ -941,7 +953,7 @@ async function loadPosts() {
   loc: p.loc || "",
 
   // 🔥 FIX 1 (IMPORTANT)
-  name: p.user || "User",
+  name: p.user || "Anonymous",
 
   rating: 4.2,
   trust: 80,
@@ -949,6 +961,9 @@ async function loadPosts() {
   lat: p.lat || 19.0760,
   lng: p.lng || 72.8777,
   cat: p.cat || "task",
+
+  joined: p.joined || false,
+
 
   // 🔥 FIX 2 (MAIN BUG)
   ts: new Date(p.createdAt).getTime()
@@ -1005,13 +1020,6 @@ loadUser();
   }
 }
 
-  /* Locations for distance badges (Feature 3) */
-  const MUMBAI_LOCATIONS = [
-  "Bandra West", "Bandra East", "Khar", "Santacruz West", "Santacruz East",
-  "Juhu", "Andheri West", "Andheri East", "Versova", "Vile Parle",
-  "Dadar", "Mahim", "Lower Parel", "Worli", "Powai",
-  "Ghatkopar", "Kurla", "Chembur", "Malad", "Borivali"
-];
 
   /* ──── DATA ──── */
   const AVATARS = [
@@ -1021,42 +1029,71 @@ loadUser();
   ];
   const NAMES = ['Anika S','Rohan M','Priya K','Karan D','Sneha R','Vivek T','Meera J','Arjun P','Zoya H','Dev N'];
 
+let selectedLocation = null;
+
 let posts = [];
   let nextId = 7;
   let activeTab = 'all';
 
-  /* loaction suggestions (bonus for Feature 3) */
-  function showSuggestions() {
+  /* ──── LOCATION AUTOCOMPLETE (Feature 2) ──── */
+  let debounceTimer;
+
+async function showSuggestions() {
   const input = document.getElementById("f-loc");
   const dropdown = document.getElementById("locSuggestions");
 
-  const value = input.value.toLowerCase();
+  const value = input.value.trim();
 
   if (!value) {
     dropdown.style.display = "none";
     return;
   }
 
-  const filtered = MUMBAI_LOCATIONS.filter(loc =>
-    loc.toLowerCase().includes(value)
-  );
+  clearTimeout(debounceTimer);
 
-  if (filtered.length === 0) {
-    dropdown.style.display = "none";
-    return;
-  }
+  debounceTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${value}, Mumbai&limit=5`
+      );
 
-  dropdown.innerHTML = filtered.map(loc =>
-    `<div class="loc-item" onclick="selectLocation('${loc}')">${loc}</div>`
-  ).join("");
+      const data = await res.json();
 
-  dropdown.style.display = "block";
+      if (!data.length) {
+        dropdown.style.display = "none";
+        return;
+      }
+
+      dropdown.innerHTML = data.map(place => {
+        const name = place.display_name.split(",").slice(0,2).join(",");
+        return `
+          <div class="loc-item" onclick="selectLocation('${name.replace(/'/g,"")}', ${place.lat}, ${place.lon})">
+            📍 ${name}
+          </div>
+        `;
+      }).join("");
+
+      dropdown.style.display = "block";
+
+    } catch (err) {
+      console.error("Suggestion error:", err);
+      dropdown.style.display = "none";
+    }
+  }, 300); // debounce
 }
 
-function selectLocation(loc) {
-  document.getElementById("f-loc").value = loc;
+function selectLocation(name, lat, lng) {
+  document.getElementById("f-loc").value = name;
   document.getElementById("locSuggestions").style.display = "none";
+
+  selectedLocation = {
+    name,
+    lat: parseFloat(lat),
+    lng: parseFloat(lng)
+  };
 }
+
+
 
   /* ──── USER LOCATION (Feature 3 — distance badges) ──── */
   let userLat = null, userLng = null;
@@ -1193,9 +1230,11 @@ function avatarStyle(id){
       p._dist = (userLat && p.lat) ? getDistanceKm(userLat, userLng, p.lat, p.lng) : null;
     });
 
-    if(sort==='nearest' && userLat){
-      arr.sort((a,b) => (a._dist??9999) - (b._dist??9999));
-    } else if(sort==='reward'){
+    if (sort === 'nearest' && userLat) {
+  arr = arr
+    .filter(p => p._dist !== null)
+    .sort((a, b) => a._dist - b._dist);
+} else if(sort==='reward'){
       arr.sort((a,b)=>(b.reward||0)-(a.reward||0));
     } else if(sort==='rating'){
       arr.sort((a,b)=>b.rating-a.rating);
@@ -1288,9 +1327,13 @@ function avatarStyle(id){
     Delete
   </button>
 ` : `
-  <button class="accept-btn" onclick="joinCommunity('${p.id}')">
-    Join
-  </button>
+  <button 
+  class="${p.joined ? 'card-action done-join' : 'accept-btn'}"
+  onclick="joinCommunity('${p.id}')"
+  ${p.joined ? 'disabled' : ''}
+>
+  ${p.joined ? 'Joined' : 'Join'}
+</button>
 `}
         </div>
       </div>`;
@@ -1369,6 +1412,7 @@ function avatarStyle(id){
   }
 
 async function submitPost() {
+  const currentUser = JSON.parse(localStorage.getItem("qq_user"));
   const title = document.getElementById("f-title").value;
   const desc = document.getElementById("f-desc").value;
   const loc = document.getElementById("f-loc").value;
@@ -1377,7 +1421,7 @@ async function submitPost() {
   const user = JSON.parse(localStorage.getItem("qq_user"));
 const selectedCat = document.querySelector('input[name="cat"]:checked').value;
   // 🔥 GET COORDINATES (IMPORTANT)
-  const coords = await getCoordinates(loc);
+  const coords = selectedLocation;
 
   const newPost = {
     title,
@@ -1387,12 +1431,12 @@ const selectedCat = document.querySelector('input[name="cat"]:checked').value;
     reward,
 
     // 🔥 REQUIRED FIELDS
-    name: user?.name || "User",
+    user: user?.name || "User",
     rating: 4.2,
     trust: 85,
 
-    lat: coords ? coords.lat : 19.0760,
-    lng: coords ? coords.lng : 72.8777,
+    lat: coords?.lat || 19.0760,
+lng: coords?.lng || 72.8777,
 
     ts: Date.now()
   };
@@ -1429,7 +1473,14 @@ loadPosts();       // refresh feed
 }
 
 function joinCommunity(id){
+  const post = posts.find(p => p.id === id);
+
+  if (!post || post.joined) return;
+
+  post.joined = true;
+
   showToast("🎉 Joined community!");
+  renderFeed();
 }
 
 /* delete post (bonus) */
@@ -1657,6 +1708,46 @@ function init() {
     scrollRotate();
     gsap.to(stage, { autoAlpha: 1, duration: 2, delay: 2 });
 }
+
+async function getUserLocation() {
+  if (!navigator.geolocation) {
+    document.getElementById("navLocation").innerText = "Location not supported";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+        );
+
+        const data = await res.json();
+
+        const area =
+          data.address.suburb ||
+          data.address.neighbourhood ||
+          data.address.city ||
+          "Your area";
+
+        const city = data.address.city || data.address.state || "";
+
+        document.getElementById("navLocation").innerText =
+          `${area}, ${city}`;
+      } catch (err) {
+        document.getElementById("navLocation").innerText = "Location error";
+      }
+    },
+    () => {
+      document.getElementById("navLocation").innerText = "Permission denied";
+    }
+  );
+}
+
+getUserLocation();
 
 window.onload = () => {
 	init();
