@@ -941,7 +941,7 @@ if (!user) {
 
 async function loadPosts() {
   try {
-    const res = await fetch("http://localhost:5000/api/posts");
+    const res = await fetch("https://quickqnnect-backend.onrender.com/api/posts");
     const data = await res.json();
 
     if (!Array.isArray(data)) {
