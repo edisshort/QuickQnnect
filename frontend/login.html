@@ -104,6 +104,33 @@ body {
   opacity: 0.9;
 }
 
+.loc-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+
+  max-height: 180px;
+  overflow-y: auto;
+
+  display: none;
+  z-index: 1000;
+}
+
+.loc-item {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.loc-item:hover {
+  background: #f0fdf4;
+}
+
 /* RIGHT */
 .right {
   padding: 40px;
@@ -179,11 +206,10 @@ button {
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
 
-    <select id="college" style="display:none;">
-      <option value="">Select college</option>
-      <option>SFIT</option>
-      <option>DJ Sanghvi</option>
-    </select>
+    <div id="collegeWrapper" style="position: relative; display:none;">
+  <input id="college" placeholder="Search your college...">
+  <div id="collegeSuggestions" class="loc-dropdown"></div>
+</div>
 
     <button onclick="login()">Continue</button>
 
@@ -196,6 +222,97 @@ button {
 
 <script>
 let isLogin = true;
+
+/* COLLEGE AUTOCOMPLETE */
+const colleges = [
+  // 🔥 TOP ENGINEERING
+  "VJTI Mumbai",
+  "SPIT Mumbai",
+  "DJ Sanghvi Engineering",
+  "SFIT Borivali",
+  "KJ Somaiya Engineering",
+  "VESIT Chembur",
+  "Thadomal Shahani Engineering College",
+  "Fr. CRCE Bandra",
+  "Don Bosco Institute of Technology",
+  "Xavier Institute of Engineering",
+  "Atharva College of Engineering",
+  "Rajiv Gandhi Institute of Technology",
+  "Terna Engineering College",
+  "Datta Meghe College of Engineering",
+  "Shah & Anchor Kutchhi Engineering College",
+  "Universal College of Engineering",
+  "MH Saboo Siddik College of Engineering",
+  "Lokmanya Tilak College of Engineering",
+  "Thakur College of Engineering",
+  "VIVA Institute of Technology",
+
+  // 🎓 DEGREE / COMMERCE / ARTS (VERY IMPORTANT ADD)
+  "St. Xavier's College Mumbai",
+  "HR College of Commerce and Economics",
+  "KC College Mumbai",
+  "Jai Hind College",
+  "Ruparel College",
+  "Wilson College",
+  "SIES College of Arts Science Commerce",
+  "Sophia College for Women",
+  "NM College Vile Parle",
+  "Mithibai College",
+  "Podar College of Commerce",
+  "Kirti College Dadar",
+  "Bhavans College Andheri",
+  "Patkar College Goregaon",
+  "Sathaye College Vile Parle",
+  "Ramnarain Ruia College",
+  "Elphinstone College Mumbai",
+
+  // 🏫 OTHERS (COMMON)
+  "Amity University Mumbai",
+  "DY Patil University Navi Mumbai",
+  "NMIMS Mumbai",
+  "Atlas SkillTech University",
+  "ITM Group of Institutions"
+];
+
+const collegeInput = document.getElementById("college");
+const collegeDropdown = document.getElementById("collegeSuggestions");
+
+collegeInput.addEventListener("input", () => {
+  const value = collegeInput.value.toLowerCase();
+
+  if (!value) {
+    collegeDropdown.style.display = "none";
+    return;
+  }
+
+  const filtered = colleges.filter(c =>
+    c.toLowerCase().includes(value)
+  );
+
+  if (!filtered.length) {
+  collegeDropdown.innerHTML = `
+    <div class="loc-item" onclick="selectCollege('${collegeInput.value}')">
+      Custom "${collegeInput.value}"
+    </div>
+  `;
+  collegeDropdown.style.display = "block";
+  return;
+}
+
+  collegeDropdown.innerHTML = filtered.map(c => `
+    <div class="loc-item" onclick="selectCollege('${c}')">
+      ${c}
+    </div>
+  `).join("");
+
+  collegeDropdown.style.display = "block";
+});
+
+function selectCollege(name) {
+  collegeInput.value = name;
+  collegeDropdown.style.display = "none";
+}
+
 
 /* 🔥 BACKGROUND ANIMATION (VISIBLE NOW) */
 gsap.to("#b1", {
@@ -242,8 +359,8 @@ function toggleMode() {
   document.getElementById("name").style.display =
     isLogin ? "none" : "block";
 
-  document.getElementById("college").style.display =
-    isLogin ? "none" : "block";
+  document.getElementById("collegeWrapper").style.display =
+  isLogin ? "none" : "block";
 }
 
 async function login() {
