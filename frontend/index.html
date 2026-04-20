@@ -388,6 +388,63 @@ body {
   pointer-events: none;
   z-index: -1;
 }
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+/* SEARCH */
+.search-wrap {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 8px 10px;
+  border-radius: 12px;
+  flex: 1;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  flex: 1;
+  margin-left: 8px;
+}
+
+.clear-btn {
+  cursor: pointer;
+  font-size: 14px;
+  color: #888;
+}
+
+/* FILTER ITEMS */
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-item span {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.filter-item select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.main-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
 
 /* filter */
 .filter-bar {
@@ -673,6 +730,15 @@ body {
   .toast.show { opacity: 1; transform: translateY(0) scale(1); }
   .toast-icon { font-size: 15px; }
 
+ /* ── CLEAR LOCATION BUTTON ── */
+  .clear-btn {
+  background: #f3f4f6;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
   /* ── MAP BUTTON ── */
   .map-btn {
     display: inline-flex; align-items: center; gap: 4px;
@@ -818,20 +884,47 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
 
 <!-- FILTER BAR -->
 <div class="filter-bar">
+
+  <!-- SEARCH -->
   <div class="search-wrap">
-    <svg class="search-icon" width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <svg class="search-icon" width="15" height="15" viewBox="0 0 15 15">
       <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
       <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
     </svg>
-    <input class="search-input" id="searchInput" type="text" placeholder="Search posts..." oninput="renderFeed()">
-    <button onclick="clearSearch()" style="margin-left:6px;">❌</button>
+
+    <input class="search-input" id="searchInput" type="text"
+      placeholder="Search posts..." oninput="renderFeed()">
+
+    <span class="clear-btn" onclick="clearSearch()">✖</span>
   </div>
-  <select class="sort-select" id="sortSelect" onchange="renderFeed()">
-    <option value="nearest">Nearest first</option>
-    <option value="newest">Newest first</option>
-    <option value="reward">Highest reward</option>
-    <option value="rating">Top rated</option>
-  </select>
+
+  <!-- CATEGORY -->
+  <div class="filter-item">
+    <span>Category</span>
+    <select id="purposeFilter" onchange="renderFeed()">
+      <option value="">All</option>
+      <option value="teach">📘 Learn</option>
+      <option value="hobby">🎨 Hobby</option>
+      <option value="assignment">📚 Assignment</option>
+      <option value="meeting">📅 Meeting</option>
+      <option value="travel">🚗 Travel</option>
+      <option value="project">💻 Project</option>
+      <option value="tech">🧠 Tech</option>
+      <option value="event">🎉 Event</option>
+    </select>
+  </div>
+
+  <!-- SORT -->
+  <div class="filter-item">
+    <span>Sort</span>
+    <select id="sortSelect" onchange="renderFeed()">
+      <option value="nearest">Nearest</option>
+      <option value="newest">Newest</option>
+      <option value="reward">Reward</option>
+      <option value="rating">Top Rated</option>
+    </select>
+  </div>
+
 </div>
 
 <!-- FEED -->
@@ -894,6 +987,20 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
           </div>
         </div>
       </div>
+      <div class="field">
+  <label class="field-label">Category</label>
+  <select id="f-category" class="field-input">
+    <option value="">Select category</option>
+    <option value="teach">Teach / Learn</option>
+    <option value="hobby">Join a Hobby</option>
+    <option value="assignment">Assignment</option>
+    <option value="meeting">Meeting</option>
+    <option value="travel">Travel / Carpool</option>
+    <option value="project">Join a Project</option>
+    <option value="tech">Tech Field</option>
+    <option value="event">Tech / Other Events</option>
+  </select>
+</div>
       <div class="field">
         <label class="field-label" for="f-title">Title</label>
         <input class="field-input" id="f-title" placeholder="Short and clear..." maxlength="80">
@@ -1153,6 +1260,14 @@ function selectLocation(name, lat, lng) {
     );
   }
 
+  /* ──── CLEAR FILTERS (Feature 4) ──── */
+  function clearFilters() {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("purposeFilter").value = "";
+  document.getElementById("sortSelect").value = "nearest";
+  renderFeed();
+}
+
   /* ──── HELPERS ──── */
 
   async function getCoordinates(location) {
@@ -1252,6 +1367,12 @@ function acceptTask(id){
     const desc = p.desc?.toLowerCase() || "";
     const loc = p.loc?.toLowerCase() || "";
 
+    const purpose = document.getElementById("purposeFilter").value;
+
+if (purpose) {
+  arr = arr.filter(p => p.purpose === purpose);
+}
+
     return (
       title.includes(q) ||
       desc.includes(q) ||
@@ -1317,6 +1438,9 @@ function acceptTask(id){
   <span class="card-title">${escHtml(p.title)}</span>
 
   ${p.accepted ? `<span class="accepted-badge">✔ Accepted</span>` : ''}
+  <span style="font-size:12px; color:#1a9e75;">
+  ${p.purpose || ""}
+</span>
 
   <span class="${badgeCls(p.cat)}">${badgeTxt(p.cat)}</span>
 </div>
@@ -1473,10 +1597,16 @@ function contactUser(phone) {
 async function submitPost() {
   const phone = document.getElementById("f-phone").value.trim();
   const currentUser = JSON.parse(localStorage.getItem("qq_user"));
+  const category = document.getElementById("f-category").value;
   const title = document.getElementById("f-title").value;
   const desc = document.getElementById("f-desc").value;
   const loc = document.getElementById("f-loc").value;
   const reward = document.getElementById("f-reward").value;
+
+if (!category) {
+  showToast("Select category");
+  return;
+}
 
   const user = JSON.parse(localStorage.getItem("qq_user"));
 const selectedCat = document.querySelector('input[name="cat"]:checked').value;
@@ -1490,6 +1620,7 @@ const selectedCat = document.querySelector('input[name="cat"]:checked').value;
     loc,
     reward,
     phone,
+    purpose: category,
     user: user?.name || "User",
     rating: 4.2,
     trust: 85,

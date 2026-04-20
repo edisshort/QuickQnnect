@@ -11,6 +11,7 @@ const postSchema = new mongoose.Schema({
   user: String,
   college: String,
   phone: String,
+  purpose: String,
   // 🔥 ADD THIS
   accepted: {
     type: Boolean,
