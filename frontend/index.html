@@ -901,7 +901,7 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
   <!-- CATEGORY -->
   <div class="filter-item">
     <span>Category</span>
-    <select id="purposeFilter" onchange="renderFeed()">
+    <select id="purposeFilter" onchange="handleCategoryChange(); renderFeed()">
       <option value="">All</option>
       <option value="teach">📘 Learn</option>
       <option value="hobby">🎨 Hobby</option>
@@ -911,7 +911,14 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
       <option value="project">💻 Project</option>
       <option value="tech">🧠 Tech</option>
       <option value="event">🎉 Event</option>
+      <option value="other">➕ Other</option>
     </select>
+          <input 
+  type="text" 
+  id="customCategory" 
+  placeholder="Enter custom category"
+  style="display:none;"
+>
   </div>
 
   <!-- SORT -->
@@ -1000,6 +1007,13 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
     <option value="tech">Tech Field</option>
     <option value="event">Tech / Other Events</option>
   </select>
+  <input 
+  type="text" 
+  id="f-customCategory" 
+  class="field-input"
+  placeholder="Enter custom category"
+  style="display:none;"
+>
 </div>
       <div class="field">
         <label class="field-label" for="f-title">Title</label>
@@ -1531,6 +1545,18 @@ if (purpose) {
 
   function escHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
+  /* handle extra input */
+function handleCategoryChange() {
+  const value = document.getElementById("purposeFilter").value;
+  const custom = document.getElementById("customCategory");
+
+  if (value === "other") {
+    custom.style.display = "block";
+  } else {
+    custom.style.display = "none";
+  }
+}
+
   /* ──── ACTIONS ──── */
   function setTab(el){
     activeTab = el.dataset.tab;
@@ -1603,6 +1629,11 @@ async function submitPost() {
   const loc = document.getElementById("f-loc").value;
   const reward = document.getElementById("f-reward").value;
 
+let purpose = document.getElementById("f-category").value;
+
+if (purpose === "other") {
+  purpose = document.getElementById("f-customCategory").value;
+}
 if (!category) {
   showToast("Select category");
   return;
@@ -1728,6 +1759,13 @@ function renderMapMarkers() {
   });
 
   mapInstance.addLayer(markerCluster);
+}
+
+function handleCreateCategory() {
+  const val = document.getElementById("f-category").value;
+  const input = document.getElementById("f-customCategory");
+
+  input.style.display = val === "other" ? "block" : "none";
 }
 
 
