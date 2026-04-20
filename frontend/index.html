@@ -996,7 +996,7 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
       </div>
       <div class="field">
   <label class="field-label">Category</label>
-  <select id="f-category" class="field-input">
+  <select id="f-category" class="field-input" onchange="handleCustomCategoryChange()">
     <option value="">Select category</option>
     <option value="teach">Teach / Learn</option>
     <option value="hobby">Join a Hobby</option>
@@ -1005,14 +1005,15 @@ Find help for assignments, notes, and small tasks. Earn money and connect with s
     <option value="travel">Travel / Carpool</option>
     <option value="project">Join a Project</option>
     <option value="tech">Tech Field</option>
-    <option value="event">Tech / Other Events</option>
+    <option value="tech">🧠 Tech</option>
+  <option value="other">➕ Other</option>
   </select>
   <input 
   type="text" 
   id="f-customCategory" 
   class="field-input"
   placeholder="Enter custom category"
-  style="display:none;"
+  style="display:none; margin-top:8px;"
 >
 </div>
       <div class="field">
@@ -1631,10 +1632,20 @@ async function submitPost() {
 
 let purpose = document.getElementById("f-category").value;
 
+// If "Other" selected → take custom input
 if (purpose === "other") {
-  purpose = document.getElementById("f-customCategory").value;
+  const custom = document.getElementById("f-customCategory").value.trim();
+
+  if (!custom) {
+    showToast("Enter custom category");
+    return;
+  }
+
+  purpose = custom;
 }
-if (!category) {
+
+// Normal validation
+if (!purpose) {
   showToast("Select category");
   return;
 }
@@ -1762,10 +1773,15 @@ function renderMapMarkers() {
 }
 
 function handleCreateCategory() {
-  const val = document.getElementById("f-category").value;
+  const dropdown = document.getElementById("f-category");
   const input = document.getElementById("f-customCategory");
 
-  input.style.display = val === "other" ? "block" : "none";
+  if (dropdown.value === "other") {
+    input.style.display = "block";
+  } else {
+    input.style.display = "none";
+    input.value = ""; // reset when not used
+  }
 }
 
 
